@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pallanguzhi - Minimalist White</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --board-color: #ffffff;
+            --pit-depth: #e9ecef;
+            --text-main: #212529;
+            --accent: #adb5bd;
+            --seed-color: #495057;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            overflow-x: hidden;
+            touch-action: manipulation;
+            padding-bottom: 40px;
+        }
+
+        .main-game-container {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 1100px;
+            padding: 20px;
+        }
+
+        @media (max-width: 640px) {
+            .main-game-container {
+                flex-direction: column;
+                gap: 15px;
+                padding: 10px;
+            }
+            .side-panel {
+                flex-direction: row !important;
+                width: 100%;
+                justify-content: center;
+                order: 3; /* Rules/Reset at bottom */
+                margin-top: 10px;
+            }
+            .game-stats-panel {
+                flex-direction: row !important;
+                width: 90%;
+                justify-content: space-around;
+                min-width: unset !important;
+                order: 1; /* Turn/Hand at top */
+                margin-bottom: 10px;
+            }
+            .board-wrapper {
+                order: 2;
+            }
+            .game-stats-panel .h-px {
+                width: 1px !important;
+                height: 20px !important;
+            }
+        }
+
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 50px;
+            align-items: center;
+        }
+
+        .board-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            flex-grow: 1;
+            width: 100%;
+        }
+
+        .board {
+            background: var(--board-color);
+            border: 1px solid #dee2e6;
+            border-radius: 32px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+            display: grid;
+            grid-template-rows: repeat(2, 1fr);
+            padding: 20px;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .pit {
+            aspect-ratio: 1/1;
+            background: var(--pit-depth);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.05);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+        }
+
+        .pit.active-turn { 
+            background: #ffffff;
+            border-color: var(--text-main);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+        }
+        
+        .pit.disabled { opacity: 0.4; cursor: not-allowed; }
+        .pit:active:not(.disabled) { transform: scale(0.96); }
+
+        .seed-count {
+            position: absolute;
+            bottom: -20px;
+            font-weight: 600;
+            font-size: 0.65rem;
+            color: var(--accent);
+            letter-spacing: 0.05em;
+        }
+
+        .seed-container {
+            width: 70%;
+            height: 70%;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            position: relative;
+        }
+
+        .seed {
+            width: 10px;
+            height: 10px;
+            background: var(--seed-color);
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .status-pill {
+            background: #ffffff;
+            padding: 6px 16px;
+            border-radius: 100px;
+            border: 1px solid #dee2e6;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-main);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            transition: border-color 0.3s;
+        }
+
+        .active-player { 
+            border-color: var(--text-main);
+            border-width: 2px;
+        }
+
+        .game-stats-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #ffffff;
+            padding: 16px;
+            border-radius: 20px;
+            min-width: 100px;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+
+        .icon-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .icon-btn:hover { background: var(--pit-depth); }
+
+        .captured-msg {
+            position: absolute;
+            color: var(--text-main);
+            font-weight: 700;
+            font-size: 1.1rem;
+            animation: fadeUp 0.8s forwards;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-40px); }
+        }
+
+        .modal {
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(4px);
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 32px;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+            border: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+
+    <h1 class="text-2xl font-light tracking-[0.3em] text-gray-800 mb-4 mt-6" style="font-family: 'Cinzel', serif;">PALLANGUZHI</h1>
+
+    <div class="main-game-container">
+        <!-- Live Stats (Top on Mobile) -->
+        <div class="game-stats-panel">
+            <div class="flex flex-col items-center">
+                <span class="text-[9px] uppercase tracking-widest opacity-40 mb-1">Turn</span>
+                <span id="current-player-text" class="text-sm font-bold">P1</span>
+            </div>
+            <div class="h-px w-full bg-gray-100"></div>
+            <div class="flex flex-col items-center">
+                <span class="text-[9px] uppercase tracking-widest opacity-40 mb-1">Hand</span>
+                <span id="hand-count" class="text-sm font-bold">0</span>
+            </div>
+        </div>
+
+        <!-- Board Wrapper -->
+        <div class="board-wrapper">
+            <div id="p2-ui" class="status-pill">
+                <span class="opacity-50 text-[10px] uppercase tracking-wider mr-2">Player 2</span>
+                <span class="font-semibold" id="p2-score">0</span>
+            </div>
+
+            <div class="board">
+                <div class="row" id="row-2">
+                    <div class="pit" data-index="13"></div>
+                    <div class="pit" data-index="12"></div>
+                    <div class="pit" data-index="11"></div>
+                    <div class="pit" data-index="10"></div>
+                    <div class="pit" data-index="9"></div>
+                    <div class="pit" data-index="8"></div>
+                    <div class="pit" data-index="7"></div>
+                </div>
+                <div class="row" id="row-1">
+                    <div class="pit" data-index="0"></div>
+                    <div class="pit" data-index="1"></div>
+                    <div class="pit" data-index="2"></div>
+                    <div class="pit" data-index="3"></div>
+                    <div class="pit" data-index="4"></div>
+                    <div class="pit" data-index="5"></div>
+                    <div class="pit" data-index="6"></div>
+                </div>
+            </div>
+
+            <div id="p1-ui" class="status-pill">
+                <span class="opacity-50 text-[10px] uppercase tracking-wider mr-2">Player 1</span>
+                <span class="font-semibold" id="p1-score">0</span>
+            </div>
+        </div>
+
+        <!-- Controls (Bottom on Mobile) -->
+        <div class="side-panel">
+            <button onclick="resetGame()" class="icon-btn" title="Restart">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            </button>
+            <button onclick="toggleInstructions()" class="icon-btn" title="Rules">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="rules-modal" class="modal" onclick="toggleInstructions()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2 class="text-xl font-bold mb-4 text-center tracking-tight">How to Play</h2>
+            <ul class="text-sm space-y-3 text-gray-600">
+                <li class="flex gap-3"><span>1.</span> Sow seeds counter-clockwise from your side.</li>
+                <li class="flex gap-3"><span>2.</span> If your hand is empty, pick up from the next pit.</li>
+                <li class="flex gap-3"><span>3.</span> If the next pit is empty, capture seeds from the one following it.</li>
+            </ul>
+            <button onclick="toggleInstructions()" class="w-full mt-8 py-3 bg-black text-white rounded-xl font-semibold text-sm">Got it</button>
+        </div>
+    </div>
+
+    <div id="winner-modal" class="modal">
+        <div class="modal-content text-center">
+            <h2 class="text-2xl font-bold mb-2 tracking-tight" id="winner-title">Winner!</h2>
+            <p id="winner-text" class="mb-8 text-gray-500 text-sm"></p>
+            <button onclick="resetGame()" class="w-full py-3 bg-black text-white rounded-xl font-semibold text-sm">New Game</button>
+        </div>
+    </div>
+
+    <script>
+        let pits = Array(14).fill(5);
+        let currentPlayer = 1;
+        let p1Captured = 0;
+        let p2Captured = 0;
+        let isAnimating = false;
+        let handSeeds = 0;
+
+        const pitEls = document.querySelectorAll('.pit');
+        const p1ScoreEl = document.getElementById('p1-score');
+        const p2ScoreEl = document.getElementById('p2-score');
+        const handCountEl = document.getElementById('hand-count');
+        const playerText = document.getElementById('current-player-text');
+
+        function init() {
+            renderBoard();
+            updateUI();
+        }
+
+        function renderBoard() {
+            pitEls.forEach((pit) => {
+                const index = parseInt(pit.dataset.index);
+                const count = pits[index];
+                
+                let seedHtml = `<div class="seed-container">`;
+                const visualSeeds = Math.min(count, 8);
+                
+                for (let i = 0; i < visualSeeds; i++) {
+                    const angle = (i / visualSeeds) * 360;
+                    // Reduced distance to keep seeds inside the pit on mobile
+                    const dist = i === 0 ? 0 : 10 + (i % 3) * 2; 
+                    seedHtml += `<div class="seed" style="transform: rotate(${angle}deg) translate(${dist}px)"></div>`;
+                }
+                seedHtml += `</div><span class="seed-count">${count}</span>`;
+                
+                pit.innerHTML = seedHtml;
+                pit.classList.remove('active-turn', 'disabled');
+                
+                if (isAnimating) {
+                    pit.classList.add('disabled');
+                } else {
+                    const isP1Side = index >= 0 && index <= 6;
+                    const isP2Side = index >= 7 && index <= 13;
+                    if ((currentPlayer === 1 && isP1Side && pits[index] > 0) || 
+                        (currentPlayer === 2 && isP2Side && pits[index] > 0)) {
+                        pit.classList.add('active-turn');
+                    } else {
+                        pit.classList.add('disabled');
+                    }
+                }
+            });
+        }
+
+        function updateUI() {
+            p1ScoreEl.innerText = p1Captured;
+            p2ScoreEl.innerText = p2Captured;
+            handCountEl.innerText = handSeeds;
+            playerText.innerText = `P${currentPlayer}`;
+            
+            document.getElementById('p1-ui').classList.toggle('active-player', currentPlayer === 1);
+            document.getElementById('p2-ui').classList.toggle('active-player', currentPlayer === 2);
+        }
+
+        async function playTurn(startIndex) {
+            if (isAnimating) return;
+            const isP1Side = startIndex >= 0 && startIndex <= 6;
+            if ((currentPlayer === 1 && !isP1Side) || (currentPlayer === 2 && isP1Side) || pits[startIndex] === 0) return;
+
+            isAnimating = true;
+            handSeeds = pits[startIndex];
+            pits[startIndex] = 0;
+            renderBoard();
+            updateUI();
+            
+            let currentIndex = startIndex;
+            while (true) {
+                while (handSeeds > 0) {
+                    currentIndex = (currentIndex + 1) % 14;
+                    await sleep(250);
+                    handSeeds--;
+                    pits[currentIndex]++;
+                    renderBoard();
+                    updateUI();
+                }
+
+                await sleep(350);
+                let nextIndex = (currentIndex + 1) % 14;
+                
+                if (pits[nextIndex] > 0) {
+                    handSeeds = pits[nextIndex];
+                    pits[nextIndex] = 0;
+                    currentIndex = nextIndex;
+                    renderBoard();
+                    updateUI();
+                } else {
+                    let captureIndex = (nextIndex + 1) % 14;
+                    if (pits[captureIndex] > 0) {
+                        const captured = pits[captureIndex];
+                        pits[captureIndex] = 0;
+                        if (currentPlayer === 1) p1Captured += captured;
+                        else p2Captured += captured;
+                        showCaptureEffect(captureIndex, `+${captured}`);
+                        await sleep(700);
+                    }
+                    break;
+                }
+            }
+
+            isAnimating = false;
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            checkGameOver();
+            renderBoard();
+            updateUI();
+        }
+
+        function showCaptureEffect(idx, text) {
+            const pit = document.querySelector(`.pit[data-index="${idx}"]`);
+            const msg = document.createElement('div');
+            msg.className = 'captured-msg';
+            msg.innerText = text;
+            pit.appendChild(msg);
+            setTimeout(() => msg.remove(), 800);
+        }
+
+        function checkGameOver() {
+            const p1HasSeeds = pits.slice(0, 7).some(s => s > 0);
+            const p2HasSeeds = pits.slice(7, 14).some(s => s > 0);
+            if ((currentPlayer === 1 && !p1HasSeeds) || (currentPlayer === 2 && !p2HasSeeds)) {
+                pits.forEach((val, i) => {
+                    if (i <= 6) p1Captured += val; else p2Captured += val;
+                    pits[i] = 0;
+                });
+                const winner = p1Captured > p2Captured ? "P1 Wins" : (p2Captured > p1Captured ? "P2 Wins" : "Tie");
+                document.getElementById('winner-title').innerText = winner;
+                document.getElementById('winner-text').innerText = `Final Score — P1: ${p1Captured} | P2: ${p2Captured}`;
+                document.getElementById('winner-modal').style.display = 'flex';
+            }
+        }
+
+        function resetGame() {
+            pits = Array(14).fill(5);
+            p1Captured = p2Captured = handSeeds = 0;
+            currentPlayer = 1;
+            isAnimating = false;
+            document.getElementById('winner-modal').style.display = 'none';
+            init();
+        }
+
+        function toggleInstructions() {
+            const modal = document.getElementById('rules-modal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        pitEls.forEach(pit => pit.addEventListener('click', () => playTurn(parseInt(pit.dataset.index))));
+        window.onload = init;
+    </script>
+</body>
+</html>
