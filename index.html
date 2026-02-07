@@ -1,103 +1,310 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Classic Indian Games</title>
+    <title>Classic Indian Games | Ancient Heritage</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="manifest" href="/classic-indian-games/manifest.json">
-    <script src="https://cdn.tailwindcss.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js');
         }
-    </script>
+    </script> -->
     <style>
         :root {
-            --bg-color: #f9fafb;
-            --card-bg: #ffffff;
-            --text-main: #111827;
-            --text-muted: #6b7280;
-            --accent: #3b82f6;
+            --saffron: #FF9933;
+            --emerald: #046A38;
+            --terracotta: #C04000;
+            --cream: #FFFDF5;
         }
-
         body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--cream);
+            color: #1a1a1a;
         }
-
-        .thumbnail-card {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        h1, h2, h3, .logo-font {
+            font-family: 'Playfair Display', serif;
         }
-
-        .thumbnail-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        .hero-gradient {
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), 
+                        url('https://images.unsplash.com/photo-1532375810709-75b1da00537c?auto=format&fit=crop&q=80&w=2000');
+            background-size: cover;
+            background-position: center;
         }
-
-        .icon-container {
-            background: #f3f4f6;
-            display: flex;
+        .game-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .game-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .btn-india {
+            background-color: var(--terracotta);
+            transition: all 0.2s;
+            cursor: pointer;
+            display: inline-flex; /* Use inline-flex to keep button size constrained if needed */
             align-items: center;
             justify-content: center;
-            aspect-ratio: 16 / 9;
-            border-radius: 8px;
-            margin-bottom: 12px;
+            gap: 0.75rem;
+            line-height: 1; /* Reset line height to prevent vertical offset */
+        }
+        .btn-india:hover {
+            background-color: #a03600;
+            transform: scale(1.02);
+        }
+        .nav-link {
+            position: relative;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background-color: var(--saffron);
+            transition: width 0.3s;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        .sticky-header {
+            backdrop-filter: blur(8px);
+            background-color: rgba(255, 253, 245, 0.9);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
         }
     </style>
 </head>
-<body class="p-6 md:p-12">
+<body class="antialiased">
 
-    <div class="max-w-5xl mx-auto">
-        <!-- Header -->
-        <header class="mb-12">
-            <h1 class="text-3xl font-bold tracking-tight">Game Gallery</h1>
-            <p class="text-gray-500 mt-2">Select a game to start playing it!</p>
-        </header>
+    <!-- Navigation -->
+    <header class="sticky-header sticky top-0 z-50 border-b border-orange-100 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <span class="logo-font text-2xl font-bold text-[#C04000]">Bharat<span class="text-[#046A38]">Khela</span></span>
+            </div>
+            <div class="hidden md:flex space-x-8 font-medium">
+                <a href="#home" class="nav-link">Home</a>
+                <a href="#games" class="nav-link">Games</a>
+            </div>
+            <button class="md:hidden p-2">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+        </nav>
+    </header>
 
-        <!-- Grid Container -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            
-            <!-- Card 1 -->
-            <a href="ludo/ludo.html" class="thumbnail-card bg-white p-4 rounded-xl border border-gray-100 block group">
-                <div class="icon-container group-hover:bg-blue-50 transition-colors">
-                    <img src="img/ludo.png">
-                </div>
-                <h3 class="font-semibold text-lg">Ludo</h3>
-            </a>
-
-            <!-- Card 2 -->
-            <a href="chaturanga/chaturanga.html" class="thumbnail-card bg-white p-4 rounded-xl border border-gray-100 block group">
-                <div class="icon-container group-hover:bg-blue-50 transition-colors">
-                    <img src="img/chaturanga.png">
-                </div>
-                <h3 class="font-semibold text-lg">Chaturanga</h3>
-            </a>
-
-            <!-- Card 3 -->
-            <a href="navakankari/navakankari.html" class="thumbnail-card bg-white p-4 rounded-xl border border-gray-100 block group">
-                <div class="icon-container group-hover:bg-blue-50 transition-colors">
-                    <img src="img/navkankari.png">
-                </div>
-                <h3 class="font-semibold text-lg">Navakankari</h3>
-            </a>
-
-            <!-- Card 4 -->
-            <a href="pallanguzhi/pallanguzhi.html" class="thumbnail-card bg-white p-4 rounded-xl border border-gray-100 block group">
-                <div class="icon-container group-hover:bg-blue-50 transition-colors">
-                    <img src="img/pallanguzhi.png">
-                </div>
-                <h3 class="font-semibold text-lg">Pallanguzhi</h3>
-            </a>
-
-            <!-- Card 5 -->
-            <a href="gnt/gnt.html" class="thumbnail-card bg-white p-4 rounded-xl border border-gray-100 block group">
-                <div class="icon-container group-hover:bg-blue-50 transition-colors">
-                    <img src="img/gnt.png">
-                </div>
-                <h3 class="font-semibold text-lg">Goats & Tigers</h3>
-            </a>
+    <!-- Hero Section -->
+    <section id="home" class="hero-gradient min-h-[70vh] flex items-center justify-center text-center px-6">
+        <div class="max-w-4xl animate-fade-in">
+            <span class="text-saffron font-semibold tracking-widest uppercase mb-4 block">Ancient Traditions Reimagined</span>
+            <h1 class="text-4xl md:text-7xl text-white font-bold mb-6 leading-tight">
+                Discover the Ancient <br/> Heritage of Indian Board Games
+            </h1>
+            <p class="text-lg md:text-xl text-gray-200 mb-10 max-w-2xl mx-auto leading-relaxed">
+                From the courts of emperors to the courtyards of homes, explore the strategic depth and cultural richness of India's most beloved traditional pastimes.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="#games" class="btn-india text-white px-8 py-4 rounded-full font-bold shadow-lg">
+                    Explore Games
+                </a>
+            </div>
         </div>
-    </div>
+    </section>
 
+    <!-- Game Grid Section -->
+    <section id="games" class="py-20 bg-[#FFFDF5]">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Timeless Classics</h2>
+                <div class="w-24 h-1 bg-saffron mx-auto mb-6"></div>
+                <p class="text-gray-600 max-w-xl mx-auto">Click on a game to explore its history, rules, and significance in Indian culture.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                <!-- Game Card 1: Ludo -->
+                <article class="game-card bg-white rounded-3xl overflow-hidden shadow-md flex flex-col">
+                    <div class="h-64 overflow-hidden">
+                        <img src="img/ludo.png" 
+                             alt="Ludo" 
+                             class="w-full h-full object-contain">
+                    </div>
+                    <div class="p-8 flex flex-col flex-grow">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-2xl font-bold text-gray-800">Ludo</h3>
+                        </div>
+                        <p class="text-gray-600 mb-8 flex-grow">
+                            Ludo is a classic strategy board game for two to four players, where participants race their four tokens from start to finish based on the rolls of a single die.                        </p>
+                        <a href="ludo/ludo.html" class="btn-india text-white w-full py-4 rounded-xl font-bold group">
+                            <span>Play Now</span><i data-lucide="external-link" class="w-5 h-5 transition-transform group-hover:scale-110"></i>                            
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Game Card 2: Chaturanga -->
+                <article class="game-card bg-white rounded-3xl overflow-hidden shadow-md flex flex-col">
+                    <div class="h-64 overflow-hidden">
+                        <img src="img/chaturanga.png" 
+                             alt="Chaturanga" 
+                             class="w-full h-full object-contain">
+                    </div>
+                    <div class="p-8 flex flex-col flex-grow">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-2xl font-bold text-gray-800">Chaturanga</h3>
+                        </div>
+                        <p class="text-gray-600 mb-8 flex-grow">
+                            Chaturanga is a 7th-century Indian strategy game played on an 8x8 board that simulates a battlefield.
+                        </p>
+                        <a href="chaturanga/chaturanga.html" class="btn-india text-white w-full py-4 rounded-xl font-bold group">
+                            Play Now
+                            <i data-lucide="external-link" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Game Card 3: Navakankari -->
+                <article class="game-card bg-white rounded-3xl overflow-hidden shadow-md flex flex-col">
+                    <div class="h-64 overflow-hidden">
+                        <img src="img/navkankari.png" 
+                             alt="Navakankari" 
+                             class="w-full h-full object-contain">
+                    </div>
+                    <div class="p-8 flex flex-col flex-grow">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-2xl font-bold text-gray-800">Navakankari</h3>
+                        </div>
+                        <p class="text-gray-600 mb-8 flex-grow">
+                            Also known as Nine Men's Morris, is a traditional Indian strategy game played on a grid of three concentric squares where players aim to form rows of three to remove their opponent's pieces.
+                        </p>
+                        <a href="navakankari/navakankari.html" class="btn-india text-white w-full py-4 rounded-xl font-bold group">
+                            Play Now
+                            <i data-lucide="external-link" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Game Card 4: Pallanguzhi -->
+                <article class="game-card bg-white rounded-3xl overflow-hidden shadow-md flex flex-col">
+                    <div class="h-64 overflow-hidden">
+                        <img src="img/pallanguzhi.png" 
+                             alt="Pallanguzhi" 
+                             class="w-full h-full object-contain">
+                    </div>
+                    <div class="p-8 flex flex-col flex-grow">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-2xl font-bold text-gray-800">Pallanguzhi</h3>
+                        </div>
+                        <p class="text-gray-600 mb-8 flex-grow">
+                            a traditional South Indian "sowing" game played on a wooden board with fourteen pits, where players strategically distribute shells or seeds to capture the most pieces.
+                        </p>
+                        <a href="pallanguzhi/pallanguzhi.html" class="btn-india text-white w-full py-4 rounded-xl font-bold group">
+                            Play Now
+                            <i data-lucide="external-link" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Game Card 5: Goats & Tigers -->
+                <article class="game-card bg-white rounded-3xl overflow-hidden shadow-md flex flex-col">
+                    <div class="h-64 overflow-hidden">
+                        <img src="img/gnt.png" 
+                             alt="Goats & Tigers" 
+                             class="w-full h-full object-contain">
+                    </div>
+                    <div class="p-8 flex flex-col flex-grow">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-2xl font-bold text-gray-800">Goats & Tigers</h3>
+                        </div>
+                        <p class="text-gray-600 mb-8 flex-grow">
+                            A classic battle of strength versus numbers, requiring the tigers to leap over and capture goats while the goats must work together to block all possible tiger movements.
+                        </p>
+                        <a href="gnt/gnt.html" class="btn-india text-white w-full py-4 rounded-xl font-bold group">
+                            Play Now
+                            <i data-lucide="external-link" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                        </a>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact" class="bg-[#1a1a1a] text-white pt-20 pb-10">
+        <div class="container mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+                <div class="col-span-1 md:col-span-2">
+                    <span class="logo-font text-3xl font-bold text-saffron block mb-6">BharatKhela</span>
+                    <p class="text-gray-400 max-w-sm mb-8 leading-relaxed">
+                        Preserving the intellectual and physical heritage of India through the study and promotion of traditional games.
+                    </p>
+                    <!-- <div class="flex space-x-6">
+                        <a href="#" class="text-gray-400 hover:text-saffron transition-colors"><i data-lucide="instagram"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-saffron transition-colors"><i data-lucide="twitter"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-saffron transition-colors"><i data-lucide="facebook"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-saffron transition-colors"><i data-lucide="youtube"></i></a>
+                    </div> -->
+                </div>
+                
+                <!-- <div>
+                    <h4 class="font-bold text-xl mb-6">Explore</h4>
+                    <ul class="space-y-4 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">History of Shatranj</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Ancient Sports Festivals</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Game Rules Archive</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Cultural Significance</a></li>
+                    </ul>
+                </div> -->
+
+                <!-- <div>
+                    <h4 class="font-bold text-xl mb-6">Stay Updated</h4>
+                    <p class="text-gray-400 mb-4 text-sm">Join our newsletter for monthly deep-dives into Indian heritage.</p>
+                    <div class="flex flex-col space-y-2">
+                        <input type="email" placeholder="Enter your email" class="bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-saffron">
+                        <button class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition-colors">Subscribe</button>
+                    </div>
+                </div> -->
+            </div>
+
+            <div class="border-t border-white/10 pt-8 flex flex-col md:row justify-between items-center text-gray-500 text-sm">
+                <p>&copy; 2026 Classic Indian Games. All rights reserved.</p>
+                <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="mt-4 md:mt-0 flex items-center gap-2 hover:text-white transition-colors">
+                    Back to Top
+                    <i data-lucide="chevron-up" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Reveal on scroll logic for cards
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-fade-in');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.game-card').forEach(card => {
+            card.style.opacity = '0';
+            observer.observe(card);
+        });
+    </script>
 </body>
 </html>
