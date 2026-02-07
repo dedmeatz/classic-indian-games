@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aadu Huli Aata - Minimalist Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --accent-charcoal: #1e293b;
+            --accent-tiger: #f59e0b;
+            --bg-main: #ffffff;
+        }
+        body {
+            background-color: var(--bg-main);
+            color: var(--accent-charcoal);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            overflow: hidden;
+            height: 100dvh;
+        }
+        #game-wrapper {
+            width: 100%;
+            max-width: 500px;
+            aspect-ratio: 1 / 1;
+            position: relative;
+            background: #fafafa;
+            border-radius: 12px;
+            border: 1px solid #f1f5f9;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            margin: 0 auto;
+        }
+        canvas { 
+            display: block; 
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            touch-action: none;
+        }
+        .turn-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            z-index: 10;
+        }
+        .control-btn {
+            background: white;
+            border: 1px solid #e2e8f0;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .control-btn:active { transform: scale(0.9); background: #f8fafc; }
+        .control-btn:disabled { opacity: 0.2; box-shadow: none; }
+        
+        .controls-group {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            z-index: 10;
+            display: flex;
+            gap: 8px;
+        }
+        .stat-bar {
+            position: absolute;
+            bottom: 12px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .tutorial-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.98);
+            z-index: 1000;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem 1.5rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        input, select, textarea {
+            font-size: 16px !important;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-start p-4 bg-slate-50 pt-6">
+
+    <header class="mb-4 text-center shrink-0">
+        <h1 class="text-2xl font-light tracking-tight text-slate-800">Aadu Huli Aata</h1>
+        <p id="game-phase" class="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase mt-1">PLACEMENT PHASE</p>
+    </header>
+
+    <div id="game-wrapper">
+        <div class="controls-group">
+            <button id="reset-btn" title="Reset Game" class="control-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg></button>
+            <button id="undo-btn" title="Undo Move" class="control-btn" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v.5a5.5 5.5 0 0 1-5.5 5.5H11"></path></svg></button>
+            <button id="info-btn" title="How to Play" class="control-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></button>
+        </div>
+
+        <div class="turn-badge">
+            <span id="current-turn" class="text-[10px] font-bold tracking-widest text-slate-600 uppercase">GOAT TURN</span>
+        </div>
+
+        <canvas id="game-canvas"></canvas>
+
+        <div class="stat-bar">
+            <div class="text-left">
+                <span class="block text-[8px] uppercase tracking-widest opacity-60">Goats Placed</span>
+                <span id="goats-placed" class="text-sm font-bold">0/15</span>
+            </div>
+            <div class="text-right">
+                <span class="block text-[8px] uppercase tracking-widest opacity-60">Captured</span>
+                <span id="goats-captured" class="text-sm font-bold text-red-500">0</span>
+            </div>
+        </div>
+        
+        <!-- Win Overlay -->
+        <div id="overlay" class="hidden absolute inset-0 bg-white/95 flex flex-col items-center justify-center text-center p-6 z-50 rounded-xl">
+            <h2 id="winner-text" class="text-3xl font-light mb-2 uppercase tracking-tighter">TIGERS WIN</h2>
+            <button id="restart-btn" class="mt-6 px-10 py-3 bg-slate-800 text-white text-[11px] font-bold tracking-widest rounded-full uppercase shadow-lg active:scale-95 transition-transform">Play Again</button>
+        </div>
+    </div>
+
+    <!-- Tutorial Overlay -->
+    <div id="tutorial" class="hidden tutorial-modal">
+        <div class="flex-1 pb-8">
+            <h3 class="text-3xl font-light tracking-tight mb-8 mt-4">How to Play</h3>
+            
+            <div class="space-y-8 text-base text-slate-600 leading-relaxed">
+                <section>
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="w-8 h-8 rounded-full border-2 border-slate-800 flex items-center justify-center text-slate-800 text-sm">🐐</span>
+                        <h4 class="text-xs font-bold uppercase tracking-widest text-slate-800">Goats (15)</h4>
+                    </div>
+                    <p class="pl-11">Goats start the game. Place all 15 goats first (one per turn). Once all are placed, move them along lines. Win by blocking all tiger moves.</p>
+                </section>
+                
+                <section>
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white text-sm">🐅</span>
+                        <h4 class="text-xs font-bold uppercase tracking-widest text-orange-500">Tigers (4)</h4>
+                    </div>
+                    <p class="pl-11">Move along lines. Jump over a goat to a vacant spot to capture it. Win by capturing 5 goats.</p>
+                </section>
+
+                <section>
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-sm">⚙️</span>
+                        <h4 class="text-xs font-bold uppercase tracking-widest text-slate-400">The Rules</h4>
+                    </div>
+                    <ul class="pl-11 list-disc space-y-2">
+                        <li>Only one piece per node.</li>
+                        <li>Captures are only allowed in a straight line.</li>
+                        <li>Strategy is key to surrounding the predator!</li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+        
+        <button id="close-tutorial" class="mt-auto w-full py-5 bg-slate-800 text-white text-[11px] font-bold tracking-widest rounded-2xl uppercase shadow-xl active:scale-[0.98] transition-all">Start Playing</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const turnDisplay = document.getElementById('current-turn');
+        const phaseDisplay = document.getElementById('game-phase');
+        const placedDisplay = document.getElementById('goats-placed');
+        const capturedDisplay = document.getElementById('goats-captured');
+        const overlay = document.getElementById('overlay');
+        const tutorial = document.getElementById('tutorial');
+        const winnerText = document.getElementById('winner-text');
+        const undoBtn = document.getElementById('undo-btn');
+
+        const GOAT_COUNT = 15;
+        // Adjusted BASE_SIZE and ZOOM_SCALE to provide safe padding at edges
+        const BASE_SIZE = 600; 
+        const ZOOM_SCALE = 1.15; 
+        const INTERACTION_RADIUS = 35;
+
+        let nodes = [], connections = [], tigers = [], goats = [];
+        let turn = 'GOAT', phase = 'PLACEMENT', selectedNode = null, goatsCaptured = 0;
+        let history = [];
+
+        function initLayout() {
+            const cx = BASE_SIZE / 2;
+            const cy = BASE_SIZE / 2;
+            
+            nodes = [
+                { id: 0, x: cx, y: cy - 200 },
+                { id: 1, x: cx - 150, y: cy - 160 }, { id: 2, x: cx + 150, y: cy - 160 },
+                { id: 3, x: cx - 210, y: cy - 110 }, { id: 4, x: cx - 150, y: cy - 110 }, { id: 5, x: cx - 40, y: cy - 110 },
+                { id: 6, x: cx, y: cy - 110 }, { id: 7, x: cx + 40, y: cy - 110 }, { id: 8, x: cx + 150, y: cy - 110 },
+                { id: 9, x: cx + 210, y: cy - 110 }, { id: 10, x: cx - 210, y: cy + 20 }, { id: 11, x: cx - 150, y: cy + 20 },
+                { id: 12, x: cx - 90, y: cy + 20 }, { id: 13, x: cx, y: cy + 20 }, { id: 14, x: cx + 90, y: cy + 20 },
+                { id: 15, x: cx + 150, y: cy + 20 }, { id: 16, x: cx + 210, y: cy + 20 }, { id: 17, x: cx - 150, y: cy + 70 },
+                { id: 18, x: cx + 150, y: cy + 70 }, { id: 19, x: cx - 140, y: cy + 140 }, { id: 20, x: cx, y: cy + 140 }, { id: 21, x: cx + 140, y: cy + 140 }
+            ];
+            
+            connections = [
+                [0,5], [0,6], [0, 7], [1,3], [1,4], [2,8], [2,9], [4,11], [5,12], [6,13], [7,14], [8,15],
+                [3,4], [4,5], [5,6], [6,7], [7,8], [8,9], [10,11], [11,12], [12,13], [13,14], [14,15], [15,16],
+                [19,20], [20,21], [11,17], [15,18] , [12,19], [14,21], [13,20], [10,17],[16,18]
+            ];
+        }
+
+        function resizeCanvas() {
+            const container = document.getElementById('game-wrapper');
+            const dpr = window.devicePixelRatio || 1;
+            const size = container.clientWidth;
+            
+            canvas.width = size * dpr;
+            canvas.height = size * dpr;
+            ctx.scale(dpr, dpr);
+            drawBoard();
+        }
+
+        function drawBoard() {
+            const size = canvas.width / (window.devicePixelRatio || 1);
+            const scale = size / BASE_SIZE;
+
+            ctx.clearRect(0, 0, size, size);
+            ctx.save();
+            ctx.translate(size / 2, size / 2);
+            ctx.scale(ZOOM_SCALE * scale, ZOOM_SCALE * scale);
+            ctx.translate(-BASE_SIZE / 2, -BASE_SIZE / 2);
+
+            ctx.strokeStyle = "#e2e8f0";
+            ctx.lineWidth = 4;
+            ctx.lineCap = "round";
+            connections.forEach(conn => {
+                const s = nodes[conn[0]], e = nodes[conn[1]];
+                ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(e.x, e.y); ctx.stroke();
+            });
+
+            nodes.forEach((node, i) => {
+                ctx.fillStyle = "#ffffff";
+                ctx.beginPath(); ctx.arc(node.x, node.y, 8, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = "#cbd5e1"; 
+                ctx.lineWidth = 2; 
+                ctx.stroke();
+
+                if (selectedNode === i) {
+                    ctx.strokeStyle = "var(--accent-tiger)";
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([5, 3]);
+                    ctx.beginPath(); ctx.arc(node.x, node.y, 22, 0, Math.PI*2); ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                if (tigers.includes(i)) drawTiger(node.x, node.y);
+                if (goats.includes(i)) drawGoat(node.x, node.y);
+            });
+            ctx.restore();
+        }
+
+        function drawTiger(x, y) {
+            ctx.fillStyle = "#1e293b";
+            ctx.beginPath(); ctx.arc(x, y, 16, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = "var(--accent-tiger)";
+            ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fill();
+        }
+
+        function drawGoat(x, y) {
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath(); ctx.arc(x, y, 13, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = "#1e293b"; ctx.lineWidth = 2.5; ctx.stroke();
+        }
+
+        function handleInput(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const width = rect.width;
+            const scale = width / BASE_SIZE;
+
+            let x = (clientX - rect.left);
+            let y = (clientY - rect.top);
+
+            x = (x - width/2) / (ZOOM_SCALE * scale) + BASE_SIZE/2;
+            y = (y - width/2) / (ZOOM_SCALE * scale) + BASE_SIZE/2;
+
+            const clicked = nodes.findIndex(n => Math.hypot(n.x - x, n.y - y) < INTERACTION_RADIUS);
+            if (clicked !== -1) {
+                processMove(clicked);
+                drawBoard();
+            }
+        }
+
+        function processMove(idx) {
+            if (turn === 'GOAT') {
+                if (phase === 'PLACEMENT') {
+                    if (!tigers.includes(idx) && !goats.includes(idx)) {
+                        saveHistory(); goats.push(idx);
+                        if (goats.length + goatsCaptured === GOAT_COUNT) phase = 'MOVEMENT';
+                        endTurn();
+                    }
+                } else {
+                    if (goats.includes(idx)) selectedNode = idx;
+                    else if (selectedNode !== null && isAdjacent(selectedNode, idx) && !tigers.includes(idx) && !goats.includes(idx)) {
+                        saveHistory(); goats[goats.indexOf(selectedNode)] = idx; selectedNode = null; endTurn();
+                    }
+                }
+            } else {
+                if (tigers.includes(idx)) selectedNode = idx;
+                else if (selectedNode !== null) {
+                    if (isAdjacent(selectedNode, idx) && !tigers.includes(idx) && !goats.includes(idx)) {
+                        saveHistory(); tigers[tigers.indexOf(selectedNode)] = idx; selectedNode = null; endTurn();
+                    } else {
+                        const mid = checkJump(selectedNode, idx);
+                        if (mid !== null) {
+                            saveHistory(); tigers[tigers.indexOf(selectedNode)] = idx;
+                            goats = goats.filter(g => g !== mid); goatsCaptured++;
+                            vibrate(100);
+                            selectedNode = null; endTurn();
+                        }
+                    }
+                }
+            }
+            checkGameOver();
+        }
+
+        function isAdjacent(a, b) { return connections.some(p => (p[0] === a && p[1] === b) || (p[1] === a && p[0] === b)); }
+
+        function checkJump(s, e) {
+            if (tigers.includes(e) || goats.includes(e)) return null;
+            for (let m = 0; m < nodes.length; m++) {
+                if (goats.includes(m) && isAdjacent(s, m) && isAdjacent(m, e)) {
+                    const d1x = nodes[m].x - nodes[s].x, d1y = nodes[m].y - nodes[s].y;
+                    const d2x = nodes[e].x - nodes[m].x, d2y = nodes[e].y - nodes[m].y;
+                    if (Math.abs(d1x * d2y - d1y * d2x) < 4500 && (d1x * d2x + d1y * d2y) > 0) return m;
+                }
+            }
+            return null;
+        }
+
+        function endTurn() { turn = turn === 'GOAT' ? 'TIGER' : 'GOAT'; updateUI(); }
+
+        function updateUI() {
+            turnDisplay.innerText = `${turn} TURN`;
+            turnDisplay.style.color = turn === 'TIGER' ? 'var(--accent-tiger)' : 'var(--accent-charcoal)';
+            phaseDisplay.innerText = `${phase} PHASE`;
+            placedDisplay.innerText = `${goats.length + goatsCaptured}/${GOAT_COUNT}`;
+            capturedDisplay.innerText = goatsCaptured;
+            undoBtn.disabled = history.length === 0;
+        }
+
+        function saveHistory() {
+            history.push({ tigers: [...tigers], goats: [...goats], turn, phase, goatsCaptured });
+        }
+
+        function undo() {
+            if (history.length === 0) return;
+            const state = history.pop();
+            tigers = state.tigers; goats = state.goats; turn = state.turn; phase = state.phase; goatsCaptured = state.goatsCaptured;
+            selectedNode = null; updateUI(); drawBoard();
+        }
+
+        function checkGameOver() {
+            if (goatsCaptured >= 5) return showWin("Tigers Win");
+            let moves = false;
+            tigers.forEach(t => {
+                nodes.forEach((n, i) => { if ((isAdjacent(t, i) && !tigers.includes(i) && !goats.includes(i)) || checkJump(t, i) !== null) moves = true; });
+            });
+            if (!moves) showWin("Goats Win");
+        }
+
+        function showWin(m) { 
+            winnerText.innerText = m; 
+            overlay.classList.remove('hidden'); 
+            vibrate([100, 50, 100]); 
+        }
+
+        function vibrate(ms) { if (navigator.vibrate) navigator.vibrate(ms); }
+
+        function initGame() {
+            initLayout();
+            tigers = [0, 5, 6, 7]; 
+            goats = []; 
+            turn = 'GOAT'; 
+            phase = 'PLACEMENT';
+            goatsCaptured = 0; 
+            selectedNode = null; 
+            history = [];
+            overlay.classList.add('hidden');
+            resizeCanvas();
+            updateUI();
+        }
+
+        canvas.addEventListener('mousedown', (e) => handleInput(e.clientX, e.clientY));
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            handleInput(touch.clientX, touch.clientY);
+        }, { passive: false });
+
+        window.addEventListener('resize', resizeCanvas);
+        document.getElementById('reset-btn').onclick = initGame;
+        document.getElementById('restart-btn').onclick = initGame;
+        document.getElementById('undo-btn').onclick = undo;
+        document.getElementById('info-btn').onclick = () => tutorial.classList.remove('hidden');
+        document.getElementById('close-tutorial').onclick = () => tutorial.classList.add('hidden');
+
+        window.onload = () => {
+            initGame();
+            tutorial.classList.remove('hidden');
+        };
+    </script>
+</body>
+</html>
