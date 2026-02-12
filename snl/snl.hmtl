@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snakes and Ladders</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Amaranth:wght@400;700&family=Philosopher:wght@400;700&display=swap');
+
+        :root {
+            --primary: #c04848;
+            --secondary: #480048;
+            --accent: #ffd700;
+            --board-bg: #fdf5e6;
+            --tile-border: #d2b48c;
+        }
+
+        body {
+            font-family: 'Philosopher', sans-serif;
+            background: radial-gradient(circle, #480048 0%, #2c0000 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-container {
+            padding: 10px;
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .board-wrapper {
+            box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+            position: relative;
+            background: var(--tile-border);
+            padding: 10px;
+            border-radius: 4px;
+            border: 6px solid var(--accent);
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            width: 750px;
+            height: 750px;
+            background: var(--board-bg);
+            position: relative;
+        }
+
+        @media (max-width: 768px) {
+            #board {
+                width: 90vw;
+                height: 90vw;
+            }
+        }
+
+        .tile {
+            border: 0.5px solid rgba(139, 69, 19, 0.2);
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tile-number {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            opacity: 0.3;
+            font-size: 0.8rem;
+            color: #8b4513;
+            pointer-events: none;
+        }
+
+        #svg-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .token {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            position: absolute;
+            z-index: 20;
+            transition: all 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid white;
+            /* Precise centering via transform */
+            transform: translate(-50%, -50%);
+            left: -100px; 
+            pointer-events: none;
+        }
+
+        .token-p1 { background: #e63946; }
+        .token-p2 { background: #457b9d; }
+
+        .token::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: rgba(255,255,255,0.4);
+            border-radius: 50%;
+        }
+
+        /* Slide Wiggle Animation */
+        @keyframes slideWiggle {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(2px, 1px) scale(1.01); }
+        }
+
+        .slide-element {
+            animation: slideWiggle 3s ease-in-out infinite;
+            transform-origin: center;
+        }
+
+        /* Compact Controls */
+        .controls {
+            margin-top: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 20px;
+            border-radius: 12px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .dice-box {
+            width: 44px;
+            height: 44px;
+            background: white;
+            color: #2c0000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 6px;
+            box-shadow: 0 3px 0 #999;
+        }
+
+        .roll-btn {
+            background: linear-gradient(180deg, #ffd700, #b8860b);
+            color: #2c0000;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: #fdf5e6;
+            color: #2c0000;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 400px;
+            width: 90%;
+            border: 3px solid var(--accent);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="flex items-center gap-4 mt-4">
+        <h1 class="text-3xl font-bold tracking-tighter text-yellow-500 uppercase">Snakes and Ladders</h1>
+        <button id="info-btn" class="w-8 h-8 rounded-full border-2 border-yellow-500 text-yellow-500 flex items-center justify-center hover:bg-yellow-500 hover:text-black transition-colors font-bold">?</button>
+    </div>
+
+    <div class="game-container">
+        <div class="board-wrapper">
+            <div id="board">
+                <svg id="svg-overlay" preserveAspectRatio="none" viewBox="0 0 750 750">
+                    <defs>
+                        <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+                            <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
+                            <feOffset dx="1" dy="1" result="offsetblur" />
+                            <feComponentTransfer><feFuncA type="linear" slope="0.4" /></feComponentTransfer>
+                            <feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge>
+                        </filter>
+                    </defs>
+                </svg>
+            </div>
+            <div id="p1-token" class="token token-p1"></div>
+            <div id="p2-token" class="token token-p2"></div>
+        </div>
+    </div>
+
+    <div class="status-msg text-yellow-500 mt-2 font-bold h-6" id="status">Player 1's Turn</div>
+
+    <div class="controls">
+        <div id="dice" class="dice-box">1</div>
+        <button id="roll-btn" class="roll-btn">Roll</button>
+        <div id="current-player-indicator" class="w-6 h-6 rounded-full border-2 border-white token-p1"></div>
+    </div>
+
+    <!-- Rules Modal -->
+    <div id="rules-modal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4 border-b-2 border-yellow-600 pb-2">How to Play</h2>
+            <ul class="list-disc pl-5 space-y-2 text-sm">
+                <li>Roll the dice and move through the squares.</li>
+                <li>Ladders take you up to higher numbers.</li>
+                <li>Slides (the green wiggling paths) send you back down.</li>
+                <li>Land exactly on 100 to win!</li>
+                <li>If your roll exceeds 100, you bounce back from the finish.</li>
+            </ul>
+            <button id="close-rules" class="mt-6 w-full py-2 bg-yellow-600 text-white rounded font-bold">Got it!</button>
+        </div>
+    </div>
+
+    <div id="winner-modal" class="modal">
+        <div class="modal-content text-center">
+            <h2 class="text-4xl text-yellow-600 mb-4">VICTORY!</h2>
+            <p id="winner-text" class="text-xl mb-6"></p>
+            <button onclick="location.reload()" class="w-full py-2 bg-yellow-600 text-white rounded font-bold">New Game</button>
+        </div>
+    </div>
+
+    <script>
+        const boardElement = document.getElementById('board');
+        const svgOverlay = document.getElementById('svg-overlay');
+        const diceElement = document.getElementById('dice');
+        const rollBtn = document.getElementById('roll-btn');
+        const statusMsg = document.getElementById('status');
+        const playerIndicator = document.getElementById('current-player-indicator');
+
+        let gameState = {
+            players: [
+                { id: 1, pos: 0, el: document.getElementById('p1-token') },
+                { id: 2, pos: 0, el: document.getElementById('p2-token') }
+            ],
+            currentPlayer: 0,
+            isRolling: false
+        };
+
+        const portals = {
+            2: 23, 6: 45, 20: 59, 52: 72, 57: 96, 71: 92, // Ladders
+            43: 17, 50: 5, 56: 8, 73: 15, 84: 58, 87: 49, 98: 40 // Slides
+        };
+
+        function createBoard() {
+            boardElement.innerHTML = '';
+            boardElement.appendChild(svgOverlay);
+            for (let i = 0; i < 100; i++) {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                
+                let row = Math.floor(i / 10);
+                let col = i % 10;
+                let actualRow = 9 - row;
+                let actualCol = (actualRow % 2 === 0) ? (9 - col) : col;
+                let number = (actualRow * 10) + actualCol + 1;
+                
+                tile.id = `tile-${number}`;
+                tile.innerHTML = `<span class="tile-number">${number}</span>`;
+                
+                if ((actualRow + actualCol) % 2 === 0) {
+                    tile.style.backgroundColor = 'rgba(210, 180, 140, 0.15)';
+                }
+                boardElement.appendChild(tile);
+            }
+            setTimeout(drawPortals, 200);
+        }
+
+        function getTileCenter(num) {
+            const tile = document.getElementById(`tile-${num}`);
+            if (!tile) return null;
+            const rect = tile.getBoundingClientRect();
+            const boardRect = boardElement.getBoundingClientRect();
+            
+            const scale = 750 / boardRect.width;
+            return {
+                x: ((rect.left - boardRect.left) + rect.width / 2) * scale,
+                y: ((rect.top - boardRect.top) + rect.height / 2) * scale
+            };
+        }
+
+        function drawPortals() {
+            svgOverlay.innerHTML = svgOverlay.querySelector('defs').outerHTML;
+
+            for (const [startStr, endStr] of Object.entries(portals)) {
+                const start = parseInt(startStr);
+                const end = parseInt(endStr);
+                const sPos = getTileCenter(start);
+                const ePos = getTileCenter(end);
+                if(!sPos || !ePos) continue;
+
+                const isLadder = end > start;
+
+                if (isLadder) {
+                    const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                    group.setAttribute("filter", "url(#shadow)");
+                    const dx = ePos.x - sPos.x;
+                    const dy = ePos.y - sPos.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    const railOffset = 12;
+
+                    [ -railOffset, railOffset ].forEach(off => {
+                        const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                        const nx = -dy / dist * off;
+                        const ny = dx / dist * off;
+                        l.setAttribute("x1", sPos.x + nx); l.setAttribute("y1", sPos.y + ny);
+                        l.setAttribute("x2", ePos.x + nx); l.setAttribute("y2", ePos.y + ny);
+                        l.setAttribute("stroke", "#8b4513"); l.setAttribute("stroke-width", "5");
+                        group.appendChild(l);
+                    });
+
+                    const rungs = Math.floor(dist / 25);
+                    for(let i=1; i<rungs; i++){
+                        const t = i/rungs;
+                        const rx = sPos.x + dx*t;
+                        const ry = sPos.y + dy*t;
+                        const nx = -dy/dist * railOffset;
+                        const ny = dx/dist * railOffset;
+                        const r = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                        r.setAttribute("x1", rx-nx); r.setAttribute("y1", ry-ny);
+                        r.setAttribute("x2", rx+nx); r.setAttribute("y2", ry+ny);
+                        r.setAttribute("stroke", "#a0522d"); r.setAttribute("stroke-width", "3");
+                        group.appendChild(r);
+                    }
+                    svgOverlay.appendChild(group);
+                } else {
+                    const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                    group.classList.add('slide-element');
+                    group.setAttribute("filter", "url(#shadow)");
+
+                    const ctrlX = (sPos.x + ePos.x) / 2 + 60;
+                    const ctrlY = (sPos.y + ePos.y) / 2 - 40;
+                    const d = `M ${sPos.x} ${sPos.y} Q ${ctrlX} ${ctrlY} ${ePos.x} ${ePos.y}`;
+
+                    const outer = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    outer.setAttribute("d", d);
+                    outer.setAttribute("stroke", "#2d6a4f");
+                    outer.setAttribute("stroke-width", "20");
+                    outer.setAttribute("fill", "none");
+                    outer.setAttribute("stroke-linecap", "round");
+                    group.appendChild(outer);
+
+                    const inner = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    inner.setAttribute("d", d);
+                    inner.setAttribute("stroke", "#52b788");
+                    inner.setAttribute("stroke-width", "12");
+                    inner.setAttribute("fill", "none");
+                    inner.setAttribute("stroke-linecap", "round");
+                    group.appendChild(inner);
+
+                    const support = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    support.setAttribute("x1", sPos.x); support.setAttribute("y1", sPos.y);
+                    support.setAttribute("x2", sPos.x); support.setAttribute("y2", sPos.y + 12);
+                    support.setAttribute("stroke", "#1b4332"); support.setAttribute("stroke-width", "6");
+                    group.appendChild(support);
+
+                    svgOverlay.appendChild(group);
+                }
+            }
+        }
+
+        function movePlayer(playerIdx, newPos) {
+            const player = gameState.players[playerIdx];
+            player.pos = newPos;
+            
+            const boardRect = boardElement.getBoundingClientRect();
+            let targetX, targetY;
+
+            if (newPos === 0) {
+                targetX = -30;
+                targetY = boardRect.height - 30;
+            } else {
+                const tile = document.getElementById(`tile-${newPos}`);
+                const tileRect = tile.getBoundingClientRect();
+                
+                // Calculate EXACT midpoint of the tile relative to the board
+                targetX = (tileRect.left - boardRect.left) + (tileRect.width / 2);
+                targetY = (tileRect.top - boardRect.top) + (tileRect.height / 2);
+            }
+
+            // Removed offset shifts entirely as requested.
+            // Both pieces will overlap at the dead center.
+            player.el.style.left = `${targetX}px`;
+            player.el.style.top = `${targetY}px`;
+        }
+
+        async function handleTurn() {
+            if (gameState.isRolling) return;
+            gameState.isRolling = true;
+            rollBtn.disabled = true;
+
+            let roll = 1;
+            for(let i=0; i<10; i++) {
+                roll = Math.floor(Math.random() * 6) + 1;
+                diceElement.innerText = roll;
+                await new Promise(r => setTimeout(r, 60));
+            }
+
+            const player = gameState.players[gameState.currentPlayer];
+            let start = player.pos;
+            let target = start + roll;
+
+            if (target > 100) {
+                const over = target - 100;
+                target = 100 - over;
+                statusMsg.innerText = "Bounce back!";
+                for(let p=start+1; p<=100; p++) { movePlayer(gameState.currentPlayer, p); await new Promise(r => setTimeout(r, 200)); }
+                for(let p=99; p>=target; p--) { movePlayer(gameState.currentPlayer, p); await new Promise(r => setTimeout(r, 200)); }
+            } else {
+                for(let p=start+1; p<=target; p++) {
+                    movePlayer(gameState.currentPlayer, p);
+                    await new Promise(r => setTimeout(r, 200));
+                }
+            }
+
+            player.pos = target;
+
+            if (portals[player.pos]) {
+                const destination = portals[player.pos];
+                const isLadder = destination > player.pos;
+                statusMsg.innerText = isLadder ? "Climbing up!" : "Sliding down!";
+                await new Promise(r => setTimeout(r, 600));
+                movePlayer(gameState.currentPlayer, destination);
+                player.pos = destination;
+            }
+
+            if (player.pos === 100) {
+                document.getElementById('winner-text').innerText = `Player ${player.id} reached the end!`;
+                document.getElementById('winner-modal').style.display = 'flex';
+                return;
+            }
+
+            gameState.currentPlayer = gameState.currentPlayer === 0 ? 1 : 0;
+            playerIndicator.className = `w-6 h-6 rounded-full border-2 border-white ${gameState.currentPlayer === 0 ? 'token-p1' : 'token-p2'}`;
+            statusMsg.innerText = `Player ${gameState.players[gameState.currentPlayer].id}'s Turn`;
+            
+            gameState.isRolling = false;
+            rollBtn.disabled = false;
+        }
+
+        document.getElementById('info-btn').onclick = () => document.getElementById('rules-modal').style.display = 'flex';
+        document.getElementById('close-rules').onclick = () => document.getElementById('rules-modal').style.display = 'none';
+
+        window.onload = () => {
+            createBoard();
+            setTimeout(() => {
+                movePlayer(0, 0);
+                movePlayer(1, 0);
+            }, 600);
+            rollBtn.onclick = handleTurn;
+            window.onresize = () => {
+                drawPortals();
+                movePlayer(0, gameState.players[0].pos);
+                movePlayer(1, gameState.players[1].pos);
+            };
+        };
+    </script>
+</body>
+</html>
