@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sholo Guti - Minimalist Edition</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --board-color: #444;
+            --p1-color: #e63946;
+            --p2-color: #1d3557;
+            --highlight: rgba(69, 123, 157, 0.4);
+            --text-color: #2b2d42;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start; /* Moved to top */
+            min-height: 100vh;
+            touch-action: manipulation;
+            padding-top: 20px;
+        }
+
+        .container {
+            text-align: center;
+            width: 100%;
+            max-width: 600px; /* Increased container width */
+            padding: 10px;
+        }
+
+        .status-bar {
+            margin-bottom: 10px;
+            padding: 12px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        #turn-indicator {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .scores {
+            display: flex;
+            justify-content: space-around;
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        /* Board Styling */
+        #game-board {
+            position: relative;
+            width: 95vw;
+            height: 95vw;
+            max-width: 550px; /* Increased board max size */
+            max-height: 550px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            margin: 0 auto;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: pointer;
+        }
+
+        .action-bar {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .icon-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: none;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 1.2rem;
+        }
+
+        .icon-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.2);
+            z-index: 100;
+            display: none;
+            text-align: center;
+            max-width: 85%;
+            width: 400px;
+        }
+
+        .modal h2 { margin-top: 0; }
+        .modal p { font-size: 0.9rem; text-align: left; line-height: 1.5; }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            z-index: 90;
+        }
+
+        .close-btn {
+            margin-top: 15px;
+            padding: 8px 20px;
+            border-radius: 20px;
+            border: none;
+            background: var(--p2-color);
+            color: white;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="status-bar">
+            <div id="turn-indicator">Player 1's Turn</div>
+            <div class="scores">
+                <span>P1: <span id="p1-score">0</span>/16</span>
+                <span>P2: <span id="p2-score">0</span>/16</span>
+            </div>
+        </div>
+
+        <div id="game-board">
+            <canvas id="boardCanvas"></canvas>
+        </div>
+
+        <div class="action-bar">
+            <!-- Reset Icon Button (Circular Arrow) -->
+            <button class="icon-btn" onclick="resetGame()" title="Reset Game">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+            </button>
+            <!-- Rules Icon Button (Info) -->
+            <button class="icon-btn" onclick="toggleRules(true)" title="Game Rules">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Win Modal -->
+    <div id="win-modal" class="modal">
+        <h2 id="winner-text">Player 1 Wins!</h2>
+        <button class="close-btn" onclick="resetGame()">Play Again</button>
+    </div>
+
+    <!-- Rules Modal -->
+    <div id="rules-modal" class="modal">
+        <h2>How to Play</h2>
+        <p>
+            • <b>Objective:</b> Capture all 16 of your opponent's beads.<br><br>
+            • <b>Movement:</b> Move a bead to any adjacent empty point connected by a line.<br><br>
+            • <b>Capturing:</b> Jump over an opponent's bead into an empty space behind it in a straight line.<br><br>
+            • <b>Turns:</b> Players take turns moving one bead at a time.
+        </p>
+        <button class="close-btn" onclick="toggleRules(false)">Got it</button>
+    </div>
+
+    <div id="overlay" class="overlay" onclick="toggleRules(false)"></div>
+
+    <script>
+        const canvas = document.getElementById('boardCanvas');
+        const ctx = canvas.getContext('2d');
+        const turnEl = document.getElementById('turn-indicator');
+        const p1ScoreEl = document.getElementById('p1-score');
+        const p2ScoreEl = document.getElementById('p2-score');
+        
+        let boardSize = 550;
+        let padding = 40;
+        let step = (boardSize - padding * 2) / 4;
+        let beads = []; 
+        let currentPlayer = 1;
+        let selectedBead = null;
+        let validMoves = [];
+        let p1Captured = 0;
+        let p2Captured = 0;
+
+        const points = [];
+        for (let j = 0; j < 5; j++) {
+            for (let i = 0; i < 5; i++) {
+                points.push({ x: i, y: j });
+            }
+        }
+        const triangles = [
+            {x: 2, y: -1}, {x: 1, y: -2}, {x: 2, y: -2}, {x: 3, y: -2},
+            {x: 2, y: 5}, {x: 1, y: 6}, {x: 2, y: 6}, {x: 3, y: 6}
+        ];
+        const allPoints = [...points, ...triangles];
+
+        function initBeads() {
+            beads = [];
+            allPoints.forEach(p => {
+                if (p.y < 2 || (p.y === 2 && p.x < 2)) {
+                    beads.push({ ...p, player: 2 });
+                } else if (p.y > 2 || (p.y === 2 && p.x > 2)) {
+                    beads.push({ ...p, player: 1 });
+                }
+            });
+            p1Captured = 0;
+            p2Captured = 0;
+            currentPlayer = 1;
+            updateUI();
+        }
+
+        function resize() {
+            const container = document.getElementById('game-board');
+            boardSize = container.clientWidth;
+            canvas.width = boardSize;
+            canvas.height = boardSize;
+            padding = boardSize * 0.1;
+            // The step remains based on a total grid of roughly 8 units (-2 to 6)
+            draw();
+        }
+
+        function getCanvasCoords(gridX, gridY) {
+            const totalSteps = 8; 
+            const unit = (boardSize - padding * 2) / totalSteps;
+            return {
+                x: padding + (gridX + 2) * unit,
+                y: padding + (gridY + 2) * unit
+            };
+        }
+
+        function getGridCoords(canvasX, canvasY) {
+            const totalSteps = 8;
+            const unit = (boardSize - padding * 2) / totalSteps;
+            const gx = Math.round((canvasX - padding) / unit) - 2;
+            const gy = Math.round((canvasY - padding) / unit) - 2;
+            return { gx, gy };
+        }
+
+        function getValidMoves(bead) {
+            const moves = [];
+            allPoints.forEach(p => {
+                const occupied = beads.find(b => b.x === p.x && b.y === p.y);
+                const dx = p.x - bead.x;
+                const dy = p.y - bead.y;
+                const distSq = dx*dx + dy*dy;
+
+                if (!occupied && distSq <= 2 && distSq > 0) {
+                    moves.push({ x: p.x, y: p.y, type: 'move' });
+                }
+
+                if (!occupied && (distSq === 4 || distSq === 8)) {
+                    const midX = bead.x + dx/2;
+                    const midY = bead.y + dy/2;
+                    const opponent = beads.find(b => b.x === midX && b.y === midY && b.player !== bead.player);
+                    if (opponent) {
+                        moves.push({ x: p.x, y: p.y, type: 'capture', captured: opponent });
+                    }
+                }
+            });
+            return moves;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, boardSize, boardSize);
+            ctx.strokeStyle = "#ddd";
+            ctx.lineWidth = 1.5;
+
+            const drawLink = (p1, p2) => {
+                const start = getCanvasCoords(p1.x, p1.y);
+                const end = getCanvasCoords(p2.x, p2.y);
+                ctx.beginPath();
+                ctx.moveTo(start.x, start.y);
+                ctx.lineTo(end.x, end.y);
+                ctx.stroke();
+            };
+
+            for(let i=0; i<5; i++) {
+                drawLink({x:0, y:i}, {x:4, y:i});
+                drawLink({x:i, y:0}, {x:i, y:4});
+            }
+            drawLink({x:0, y:0}, {x:4, y:4});
+            drawLink({x:0, y:4}, {x:4, y:0});
+            drawLink({x:0, y:2}, {x:2, y:0});
+            drawLink({x:2, y:0}, {x:4, y:2});
+            drawLink({x:4, y:2}, {x:2, y:4});
+            drawLink({x:2, y:4}, {x:0, y:2});
+
+            // Triangles
+            const drawTri = (y1, y2, y3) => {
+                drawLink({x:0, y:y1}, {x:2, y:y3});
+                drawLink({x:4, y:y1}, {x:2, y:y3});
+                drawLink({x:1, y:y3}, {x:3, y:y3});
+                drawLink({x:2, y:y1}, {x:2, y:y3});
+                drawLink({x:0, y:y1}, {x:1, y:y3});
+                drawLink({x:4, y:y1}, {x:3, y:y3});
+            }
+            drawTri(0, -1, -2);
+            drawTri(4, 5, 6);
+
+            const unit = (boardSize - padding * 2) / 8;
+            const beadRadius = unit / 3.5; // Reduced bead size significantly
+
+            validMoves.forEach(m => {
+                const pos = getCanvasCoords(m.x, m.y);
+                ctx.fillStyle = varColor('--highlight');
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, beadRadius * 1.5, 0, Math.PI*2);
+                ctx.fill();
+            });
+
+            beads.forEach(b => {
+                const pos = getCanvasCoords(b.x, b.y);
+                ctx.fillStyle = b.player === 1 ? varColor('--p1-color') : varColor('--p2-color');
+                
+                if (selectedBead === b) {
+                    ctx.strokeStyle = "#000";
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, beadRadius + 4, 0, Math.PI*2);
+                    ctx.stroke();
+                }
+
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, beadRadius, 0, Math.PI*2);
+                ctx.fill();
+            });
+        }
+
+        function varColor(name) {
+            return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const { gx, gy } = getGridCoords(x, y);
+
+            const move = validMoves.find(m => m.x === gx && m.y === gy);
+            if (move && selectedBead) {
+                executeMove(selectedBead, move);
+                return;
+            }
+
+            const clickedBead = beads.find(b => b.x === gx && b.y === gy);
+            if (clickedBead && clickedBead.player === currentPlayer) {
+                selectedBead = clickedBead;
+                validMoves = getValidMoves(clickedBead);
+            } else {
+                selectedBead = null;
+                validMoves = [];
+            }
+            draw();
+        });
+
+        function executeMove(bead, move) {
+            if (move.type === 'capture') {
+                beads = beads.filter(b => b !== move.captured);
+                if (bead.player === 1) p1Captured++;
+                else p2Captured++;
+            }
+            bead.x = move.x;
+            bead.y = move.y;
+            
+            if (p1Captured === 16 || p2Captured === 16) {
+                showWinner(bead.player);
+            } else {
+                currentPlayer = currentPlayer === 1 ? 2 : 1;
+                selectedBead = null;
+                validMoves = [];
+                updateUI();
+                draw();
+            }
+        }
+
+        function updateUI() {
+            turnEl.innerText = `Player ${currentPlayer}'s Turn`;
+            turnEl.style.color = currentPlayer === 1 ? varColor('--p1-color') : varColor('--p2-color');
+            p1ScoreEl.innerText = p1Captured;
+            p2ScoreEl.innerText = p2Captured;
+        }
+
+        function showWinner(player) {
+            document.getElementById('winner-text').innerText = `Player ${player} Wins!`;
+            document.getElementById('win-modal').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        function toggleRules(show) {
+            document.getElementById('rules-modal').style.display = show ? 'block' : 'none';
+            document.getElementById('overlay').style.display = show ? 'block' : 'none';
+        }
+
+        function resetGame() {
+            document.getElementById('win-modal').style.display = 'none';
+            document.getElementById('rules-modal').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+            initBeads();
+            draw();
+        }
+
+        window.addEventListener('resize', resize);
+        initBeads();
+        resize();
+    </script>
+</body>
+</html>
